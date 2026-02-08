@@ -5,7 +5,7 @@
 
 // Application settings
 define('APP_NAME', 'Job Finder');
-define('APP_URL', 'http://localhost/job-finder');
+define('APP_URL', 'http://localhost');
 define('APP_VERSION', '1.0.0');
 
 // Path settings
@@ -30,9 +30,9 @@ define('SESSION_NAME', 'job_finder_session');
 // Email settings (configure with your SMTP details)
 define('SMTP_HOST', 'smtp.gmail.com');
 define('SMTP_PORT', 587);
-define('SMTP_USER', 'your-email@gmail.com');
-define('SMTP_PASS', 'your-app-password');
-define('SMTP_FROM_EMAIL', 'noreply@jobfinder.com');
+define('SMTP_USER', 'danishkpmariyad@gmail.com');
+define('SMTP_PASS', 'pgek mipi wojw yppp');
+define('SMTP_FROM_EMAIL', 'danishkpmariyad@gmail.com');
 define('SMTP_FROM_NAME', 'Job Finder');
 
 // Security settings

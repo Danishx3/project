@@ -5,7 +5,10 @@ require_once __DIR__ . '/../includes/header.php';
 // Require user authentication
 require_auth();
 
-$current_user = get_current_user();
+// Ensure we have current user data (header.php sets this, but double-check)
+if (!isset($current_user) || !is_array($current_user)) {
+    $current_user = get_logged_in_user();
+}
 $success_message = '';
 $error_message = '';
 
@@ -29,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
             if ($existing) {
                 $error_message = 'Email address is already in use';
             } else {
-                $profile_image = $current_user['profile_image'];
+                $profile_image = is_array($current_user) ? ($current_user['profile_image'] ?? null) : null;
                 
                 // Handle profile image upload
                 if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
@@ -56,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
                     try {
                         db_query($update_sql, [$name, $email, $phone, $profile_image, $_SESSION['user_id']]);
                         $success_message = 'Profile updated successfully!';
-                        $current_user = get_current_user(); // Refresh user data
+                        $current_user = get_logged_in_user(); // Refresh user data
                         log_activity($_SESSION['user_id'], 'profile_update', 'Updated profile information');
                     } catch (Exception $e) {
                         $error_message = 'Failed to update profile';
@@ -107,14 +110,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['change_password'])) {
 
 // Get user statistics
 $stats = [];
-if ($current_user['role'] === ROLE_USER) {
-    $stats['total_applications'] = db_fetch("SELECT COUNT(*) as count FROM applications WHERE user_id = ?", [$_SESSION['user_id']])['count'];
-    $stats['pending'] = db_fetch("SELECT COUNT(*) as count FROM applications WHERE user_id = ? AND status = 'pending'", [$_SESSION['user_id']])['count'];
-    $stats['accepted'] = db_fetch("SELECT COUNT(*) as count FROM applications WHERE user_id = ? AND status = 'accepted'", [$_SESSION['user_id']])['count'];
-} elseif ($current_user['role'] === ROLE_AGENT) {
-    $stats['total_jobs'] = db_fetch("SELECT COUNT(*) as count FROM jobs WHERE agent_id = ?", [$_SESSION['user_id']])['count'];
-    $stats['active_jobs'] = db_fetch("SELECT COUNT(*) as count FROM jobs WHERE agent_id = ? AND status = 'active'", [$_SESSION['user_id']])['count'];
-    $stats['total_applications'] = db_fetch("SELECT COUNT(*) as count FROM applications a JOIN jobs j ON a.job_id = j.id WHERE j.agent_id = ?", [$_SESSION['user_id']])['count'];
+if (is_array($current_user) && isset($current_user['role'])) {
+    if ($current_user['role'] === ROLE_USER) {
+        $stats['total_applications'] = db_fetch("SELECT COUNT(*) as count FROM applications WHERE user_id = ?", [$_SESSION['user_id']])['count'];
+        $stats['pending'] = db_fetch("SELECT COUNT(*) as count FROM applications WHERE user_id = ? AND status = 'pending'", [$_SESSION['user_id']])['count'];
+        $stats['accepted'] = db_fetch("SELECT COUNT(*) as count FROM applications WHERE user_id = ? AND status = 'accepted'", [$_SESSION['user_id']])['count'];
+    } elseif ($current_user['role'] === ROLE_AGENT) {
+        $stats['total_jobs'] = db_fetch("SELECT COUNT(*) as count FROM jobs WHERE agent_id = ?", [$_SESSION['user_id']])['count'];
+        $stats['active_jobs'] = db_fetch("SELECT COUNT(*) as count FROM jobs WHERE agent_id = ? AND status = 'active'", [$_SESSION['user_id']])['count'];
+        $stats['total_applications'] = db_fetch("SELECT COUNT(*) as count FROM applications a JOIN jobs j ON a.job_id = j.id WHERE j.agent_id = ?", [$_SESSION['user_id']])['count'];
+    }
 }
 ?>
 
@@ -124,30 +129,30 @@ if ($current_user['role'] === ROLE_USER) {
             <!-- Profile Card -->
             <div class="card">
                 <div class="card-body text-center">
-                    <?php if ($current_user['profile_image']): ?>
+                    <?php if (is_array($current_user) && !empty($current_user['profile_image'])): ?>
                         <img src="<?php echo APP_URL . '/uploads/profiles/' . $current_user['profile_image']; ?>" 
                              alt="Profile" class="rounded-circle mb-3" width="150" height="150" style="object-fit: cover;">
                     <?php else: ?>
                         <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
                              style="width: 150px; height: 150px; font-size: 3rem;">
-                            <?php echo strtoupper(substr($current_user['name'], 0, 1)); ?>
+                            <?php echo is_array($current_user) && isset($current_user['name']) ? strtoupper(substr($current_user['name'], 0, 1)) : 'U'; ?>
                         </div>
                     <?php endif; ?>
                     
-                    <h4><?php echo htmlspecialchars($current_user['name']); ?></h4>
-                    <p class="text-muted"><?php echo htmlspecialchars($current_user['email']); ?></p>
-                    <span class="badge bg-primary"><?php echo ucfirst($current_user['role']); ?></span>
+                    <h4><?php echo is_array($current_user) ? htmlspecialchars($current_user['name'] ?? 'User') : 'User'; ?></h4>
+                    <p class="text-muted"><?php echo is_array($current_user) ? htmlspecialchars($current_user['email'] ?? '') : ''; ?></p>
+                    <span class="badge bg-primary"><?php echo is_array($current_user) ? ucfirst($current_user['role'] ?? 'user') : 'User'; ?></span>
                     
                     <hr>
                     
                     <div class="text-start">
                         <p class="mb-2">
                             <i class="fas fa-phone text-primary me-2"></i>
-                            <?php echo htmlspecialchars($current_user['phone'] ?: 'Not provided'); ?>
+                            <?php echo is_array($current_user) ? htmlspecialchars($current_user['phone'] ?: 'Not provided') : 'Not provided'; ?>
                         </p>
                         <p class="mb-0">
                             <i class="fas fa-calendar text-primary me-2"></i>
-                            Member since <?php echo format_date($current_user['created_at']); ?>
+                            Member since <?php echo is_array($current_user) && isset($current_user['created_at']) ? format_date($current_user['created_at']) : 'N/A'; ?>
                         </p>
                     </div>
                 </div>
@@ -160,7 +165,7 @@ if ($current_user['role'] === ROLE_USER) {
                         <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Statistics</h6>
                     </div>
                     <div class="card-body">
-                        <?php if ($current_user['role'] === ROLE_USER): ?>
+                        <?php if (is_array($current_user) && isset($current_user['role']) && $current_user['role'] === ROLE_USER): ?>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Total Applications:</span>
                                 <strong><?php echo $stats['total_applications']; ?></strong>
@@ -173,7 +178,7 @@ if ($current_user['role'] === ROLE_USER) {
                                 <span>Accepted:</span>
                                 <strong class="text-success"><?php echo $stats['accepted']; ?></strong>
                             </div>
-                        <?php elseif ($current_user['role'] === ROLE_AGENT): ?>
+                        <?php elseif (is_array($current_user) && isset($current_user['role']) && $current_user['role'] === ROLE_AGENT): ?>
                             <div class="d-flex justify-content-between mb-2">
                                 <span>Total Jobs:</span>
                                 <strong><?php echo $stats['total_jobs']; ?></strong>
@@ -219,19 +224,19 @@ if ($current_user['role'] === ROLE_USER) {
                         <div class="mb-3">
                             <label for="name" class="form-label">Full Name</label>
                             <input type="text" class="form-control" id="name" name="name" 
-                                   value="<?php echo htmlspecialchars($current_user['name']); ?>" required>
+                                   value="<?php echo is_array($current_user) ? htmlspecialchars($current_user['name'] ?? '') : ''; ?>" required>
                         </div>
 
                         <div class="mb-3">
                             <label for="email" class="form-label">Email Address</label>
                             <input type="email" class="form-control" id="email" name="email" 
-                                   value="<?php echo htmlspecialchars($current_user['email']); ?>" required>
+                                   value="<?php echo is_array($current_user) ? htmlspecialchars($current_user['email'] ?? '') : ''; ?>" required>
                         </div>
 
                         <div class="mb-3">
                             <label for="phone" class="form-label">Phone Number</label>
                             <input type="tel" class="form-control" id="phone" name="phone" 
-                                   value="<?php echo htmlspecialchars($current_user['phone'] ?: ''); ?>">
+                                   value="<?php echo is_array($current_user) ? htmlspecialchars($current_user['phone'] ?: '') : ''; ?>">
                         </div>
 
                         <div class="mb-3">

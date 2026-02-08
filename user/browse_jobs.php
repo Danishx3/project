@@ -215,7 +215,7 @@ require_once __DIR__ . '/../includes/header.php';
 
 <!-- Job Details Modal -->
 <div class="modal fade" id="jobDetailsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Job Details</h5>
@@ -226,6 +226,12 @@ require_once __DIR__ . '/../includes/header.php';
                     <div class="spinner-border" role="status"></div>
                 </div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="applyButton" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>Apply for this Job
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -233,6 +239,17 @@ require_once __DIR__ . '/../includes/header.php';
 <script>
 function viewJobDetails(jobId) {
     const modal = new bootstrap.Modal(document.getElementById('jobDetailsModal'));
+    const content = document.getElementById('jobDetailsContent');
+    const applyBtn = document.getElementById('applyButton');
+    
+    // Reset content and show loading
+    content.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+        </div>
+    `;
+    applyBtn.classList.add('disabled');
+    
     modal.show();
     
     fetch(`<?php echo APP_URL; ?>/api/jobs.php?id=${jobId}`)
@@ -240,7 +257,16 @@ function viewJobDetails(jobId) {
         .then(data => {
             if (data.success) {
                 const job = data.job;
-                document.getElementById('jobDetailsContent').innerHTML = `
+                
+                // Update Apply button
+                if (applyBtn) {
+                    applyBtn.href = `apply_job.php?id=${job.id}`;
+                    applyBtn.classList.remove('disabled');
+                    applyBtn.removeAttribute('disabled');
+                    applyBtn.style.pointerEvents = 'auto'; // Force enable click
+                }
+                
+                content.innerHTML = `
                     <h4>${job.title}</h4>
                     <p class="text-muted">Posted by ${job.agent_name}</p>
                     
@@ -255,19 +281,29 @@ function viewJobDetails(jobId) {
                         </div>
                     </div>
                     
-                    <h6>Description</h6>
+                    <h6 class="mt-4">Description</h6>
                     <p>${job.description}</p>
                     
-                    ${job.requirements ? `<h6>Requirements</h6><p>${job.requirements}</p>` : ''}
-                    
-                    <div class="text-center mt-4">
-                        <a href="apply_job.php?id=${job.id}" class="btn btn-primary">
-                            <i class="fas fa-paper-plane me-2"></i>Apply for this Job
-                        </a>
-                    </div>
+                    ${job.requirements ? `<h6 class="mt-4">Requirements</h6><p>${job.requirements}</p>` : ''}
                 `;
+            } else {
+                content.innerHTML = `<div class="alert alert-danger">Failed to load job details.</div>`;
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            content.innerHTML = `<div class="alert alert-danger">An error occurred while loading job details.</div>`;
         });
+}
+
+// Helper functions if not already defined globally
+function formatCurrency(amount) {
+    return '₹' + parseFloat(amount).toFixed(2);
+}
+
+function formatDate(dateString) {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
 }
 </script>
 

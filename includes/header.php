@@ -1,7 +1,10 @@
 <?php
-require_once __DIR__ . '/../includes/init.php';
+// Include init.php if not already included
+if (!defined('INIT_LOADED')) {
+    require_once __DIR__ . '/../includes/init.php';
+}
 
-$current_user = get_current_user();
+$current_user = get_logged_in_user();
 $unread_count = is_authenticated() ? get_unread_notification_count($_SESSION['user_id']) : 0;
 $page_title = $page_title ?? 'Job Finder';
 ?>
@@ -22,7 +25,7 @@ $page_title = $page_title ?? 'Job Finder';
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo APP_URL; ?>/assets/css/style.css?v=<?php echo time(); ?>">
     
     <?php if (isset($extra_css)): ?>
         <?php echo $extra_css; ?>
@@ -121,12 +124,12 @@ $page_title = $page_title ?? 'Job Finder';
                         <!-- User Menu -->
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                                <?php if ($current_user && $current_user['profile_image']): ?>
-                                    <img src="<?php echo APP_URL . '/uploads/' . $current_user['profile_image']; ?>" alt="Profile" class="rounded-circle me-2" width="32" height="32">
+                                <?php if (is_array($current_user) && !empty($current_user['profile_image'])): ?>
+                                    <img src="<?php echo APP_URL . '/uploads/profiles/' . $current_user['profile_image']; ?>" alt="Profile" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
                                 <?php else: ?>
                                     <i class="fas fa-user-circle me-2 fs-4"></i>
                                 <?php endif; ?>
-                                <span><?php echo htmlspecialchars($current_user['name'] ?? 'User'); ?></span>
+                                <span><?php echo is_array($current_user) ? htmlspecialchars($current_user['name'] ?? 'User') : 'User'; ?></span>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li>

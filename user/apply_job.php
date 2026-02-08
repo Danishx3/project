@@ -1,6 +1,6 @@
 <?php
 $page_title = 'Apply for Job';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/init.php';
 
 // Require user authentication
 require_role(ROLE_USER);
@@ -66,9 +66,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['error'] = $upload_result['error'];
             redirect('/user/apply_job.php?id=' . $job_id);
         }
-    } else {
-        $_SESSION['error'] = 'Please upload your resume';
-        redirect('/user/apply_job.php?id=' . $job_id);
     }
     
     // Insert application
@@ -79,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db_query($insert_sql, [$_SESSION['user_id'], $job_id, $cover_letter, $resume_path]);
         
         // Create notification for agent
-        $current_user = get_current_user();
+        $current_user = get_logged_in_user();
         create_notification(
             $job['agent_id'],
             'New Application Received',
@@ -100,6 +97,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('/user/apply_job.php?id=' . $job_id);
     }
 }
+
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="container py-5">
@@ -188,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <div class="mb-4">
                             <label for="resume" class="form-label">
-                                Resume <span class="text-danger">*</span>
+                                Resume <span class="text-danger">(only if job need it)</span>
                             </label>
                             <input 
                                 type="file" 
@@ -196,7 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 id="resume" 
                                 name="resume" 
                                 accept=".pdf,.doc,.docx"
-                                required
+                                
                             >
                             <small class="text-muted">Accepted formats: PDF, DOC, DOCX (Max 5MB)</small>
                         </div>

@@ -1,6 +1,6 @@
 <?php
 $page_title = 'Manage Jobs';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/init.php';
 
 // Require agent authentication
 require_role(ROLE_AGENT);
@@ -44,6 +44,7 @@ if (isset($_GET['delete']) && isset($_GET['token'])) {
     redirect('/agent/manage_jobs.php');
 }
 
+
 // Get filter
 $status_filter = isset($_GET['status']) ? sanitize_input($_GET['status']) : 'all';
 
@@ -85,6 +86,8 @@ $status_counts = [
     'closed' => db_fetch("SELECT COUNT(*) as count FROM jobs WHERE agent_id = ? AND status = 'closed'", [$_SESSION['user_id']])['count'],
     'pending' => db_fetch("SELECT COUNT(*) as count FROM jobs WHERE agent_id = ? AND status = 'pending'", [$_SESSION['user_id']])['count'],
 ];
+
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="container py-5">
@@ -94,9 +97,9 @@ $status_counts = [
             <p class="text-muted">Create and manage your job postings</p>
         </div>
         <div class="col-auto">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createJobModal">
+            <a href="add_job.php" class="btn btn-primary">
                 <i class="fas fa-plus me-2"></i>Create New Job
-            </button>
+            </a>
         </div>
     </div>
 
@@ -134,9 +137,9 @@ $status_counts = [
                 <i class="fas fa-briefcase fa-4x text-muted mb-3"></i>
                 <h5>No Jobs Found</h5>
                 <p class="text-muted">You haven't created any job postings yet.</p>
-                <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#createJobModal">
+                <a href="add_job.php" class="btn btn-primary mt-3">
                     <i class="fas fa-plus me-2"></i>Create Your First Job
-                </button>
+                </a>
             </div>
         </div>
     <?php else: ?>
@@ -249,85 +252,5 @@ $status_counts = [
     <?php endif; ?>
 </div>
 
-<!-- Create Job Modal -->
-<div class="modal fade" id="createJobModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Create New Job</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="create_job.php" method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="csrf_token" value="<?php echo generate_csrf_token(); ?>">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Job Title <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="title" required>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Category <span class="text-danger">*</span></label>
-                            <select class="form-select" name="category" required>
-                                <?php
-                                $categories = get_job_categories();
-                                foreach ($categories as $cat):
-                                ?>
-                                    <option value="<?php echo htmlspecialchars($cat['name']); ?>">
-                                        <?php echo htmlspecialchars($cat['name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Job Type <span class="text-danger">*</span></label>
-                            <select class="form-select" name="job_type" required>
-                                <option value="part-time">Part-Time</option>
-                                <option value="temporary">Temporary</option>
-                                <option value="freelance">Freelance</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Location <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" name="location" required>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Minimum Salary (₹) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="salary_min" min="0" step="0.01" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Maximum Salary (₹) <span class="text-danger">*</span></label>
-                            <input type="number" class="form-control" name="salary_max" min="0" step="0.01" required>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Application Deadline <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" name="deadline" min="<?php echo date('Y-m-d'); ?>" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Job Description <span class="text-danger">*</span></label>
-                        <textarea class="form-control" name="description" rows="4" required></textarea>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Requirements</label>
-                        <textarea class="form-control" name="requirements" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Create Job</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>
+

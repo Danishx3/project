@@ -71,11 +71,11 @@ function require_role($roles) {
 }
 
 /**
- * Get current user data
+ * Get current logged in user data
  * @return array|null
  */
-if (!function_exists('get_current_user')) {
-    function get_current_user() {
+if (!function_exists('get_logged_in_user')) {
+    function get_logged_in_user() {
         if (!is_authenticated()) {
             return null;
         }
@@ -91,10 +91,28 @@ if (!function_exists('get_current_user')) {
  * @param string $url URL to redirect to
  */
 function redirect($url) {
-    if (strpos($url, 'http') !== 0) {
-        $url = APP_URL . $url;
+    if (strpos($url, 'http') === 0) {
+        header("Location: $url");
+        exit;
     }
-    header("Location: $url");
+
+    // Ensure URL has leading slash for processing
+    $url = '/' . ltrim($url, '/');
+    
+    // Get the project path from APP_URL
+    $app_path = parse_url(APP_URL, PHP_URL_PATH);
+    
+    // If APP_URL has a path component (e.g. /job-finder) and the requested URL already starts with it
+    if ($app_path && $app_path !== '/' && strpos($url, $app_path) === 0) {
+        // The URL already contains the project path, so we prepend only the root (scheme + host)
+        $root = substr(APP_URL, 0, strpos(APP_URL, $app_path));
+        header("Location: " . $root . $url);
+        exit;
+    }
+    
+    // Otherwise, append to APP_URL
+    $url = ltrim($url, '/');
+    header("Location: " . APP_URL . '/' . $url);
     exit;
 }
 
@@ -355,119 +373,6 @@ function get_pagination($total_items, $per_page, $current_page = 1) {
     ];
 }
 
-/**
- * Format currency
- * @param float $amount Amount to format
- * @return string
- */
-if (!function_exists('format_currency')) {
-    function format_currency($amount) {
-        return '₹' . number_format($amount, 2);
-    }
-}
 
-/**
- * Format date
- * @param string $date Date string
- * @return string
- */
-if (!function_exists('format_date')) {
-    function format_date($date) {
-        return date('M d, Y', strtotime($date));
-    }
-}
-
-/**
- * Time ago function
- * @param string $datetime Datetime string
- * @return string
- */
-if (!function_exists('time_ago')) {
-    function time_ago($datetime) {
-        $timestamp = strtotime($datetime);
-        $diff = time() - $timestamp;
-        
-        if ($diff < 60) {
-            return 'just now';
-        } elseif ($diff < 3600) {
-            $mins = floor($diff / 60);
-            return $mins . ' minute' . ($mins > 1 ? 's' : '') . ' ago';
-        } elseif ($diff < 86400) {
-            $hours = floor($diff / 3600);
-            return $hours . ' hour' . ($hours > 1 ? 's' : '') . ' ago';
-        } elseif ($diff < 604800) {
-            $days = floor($diff / 86400);
-            return $days . ' day' . ($days > 1 ? 's' : '') . ' ago';
-        } elseif ($diff < 2592000) {
-            $weeks = floor($diff / 604800);
-            return $weeks . ' week' . ($weeks > 1 ? 's' : '') . ' ago';
-        } else {
-            return date('M d, Y', $timestamp);
-        }
-    }
-}
-
-/**
- * Create notification
- * @param int $user_id User ID
- * @param string $title Notification title
- * @param string $message Notification message
- * @param string $type Notification type
- * @param string $link Optional link
- */
-if (!function_exists('create_notification')) {
-    function create_notification($user_id, $title, $message, $type = 'info', $link = null) {
-        $sql = "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)";
-        return db_query($sql, [$user_id, $title, $message, $type, $link]);
-    }
-}
-
-/**
- * Log activity
- * @param int $user_id User ID
- * @param string $action Action name
- * @param string $description Action description
- */
-if (!function_exists('log_activity')) {
-    function log_activity($user_id, $action, $description = null) {
-        $ip = $_SERVER['REMOTE_ADDR'] ?? null;
-        $sql = "INSERT INTO activity_log (user_id, action, description, ip_address) VALUES (?, ?, ?, ?)";
-        return db_query($sql, [$user_id, $action, $description, $ip]);
-    }
-}
-
-/**
- * Get job categories
- * @return array
- */
-if (!function_exists('get_job_categories')) {
-    function get_job_categories() {
-        return db_fetch_all("SELECT * FROM job_categories ORDER BY name", []);
-    }
-}
-
-/**
- * Validate email
- * @param string $email Email address
- * @return bool
- */
-if (!function_exists('is_valid_email')) {
-    function is_valid_email($email) {
-        return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
-    }
-}
-
-/**
- * Get unread notification count
- * @param int $user_id User ID
- * @return int
- */
-if (!function_exists('get_unread_notification_count')) {
-    function get_unread_notification_count($user_id) {
-        $sql = "SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0";
-        $result = db_fetch($sql, [$user_id]);
-        return $result ? (int)$result['count'] : 0;
-    }
-}
 
 
